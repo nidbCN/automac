@@ -14,23 +14,13 @@
 // TTL
 #define PING_TTL (64)
 
-typedef union {
-    struct {
-        uint8_t byte4;
-        uint8_t byte3;
-        uint8_t byte2;
-        uint8_t byte1;
-    } inByte;
-    uint32_t inEntirety;
-} PING_IpAddress;
-
 // ping packet structure
 typedef struct {
     struct icmphdr header;
     char message[PING_PACKET_SIZE - sizeof(struct icmphdr)];
 } PING_ICMPPacket;
 
-bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint *messageSeq,
+bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSeq,
                void callback(bool success, uint seq, uint dataSize));
 
 #endif
