@@ -51,14 +51,11 @@ int main(int argc, char *argv[]) {
             macAddress[MAC_ADDRESS_LENGTH - 1] = randomMac1;
             macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
 
-            printf("New MAC Address: ");
-            for (int i = 0; i < MAC_ADDRESS_LENGTH; ++i) {
-
-            }
             MAC_set(ifName, macAddress);
+            MAC_print(macAddress);
+            MINIEAP_restart();
         }
 
-        MINIEAP_restart();
         sleep(5);
     }
 }

@@ -1,11 +1,10 @@
 #include "minieap.h"
 #include <sys/types.h>
 #include <unistd.h>
-#include <bits/signum-generic.h>
 #include <signal.h>
 
 void MINIEAP_start() {
-    execl("/etc/init.d/minieap", "restart");
+    execl("/usr/bin/minieap", " --kill", " 1", NULL);
 }
 
 void MINIEAP_stop() {

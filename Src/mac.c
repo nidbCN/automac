@@ -55,3 +55,10 @@ uint8_t *MAC_get(const char *interface) {
 
     return (uint8_t *) (interfaceReqPtr->ifr_hwaddr.sa_data);
 }
+
+uint8_t *MAC_print(const uint8_t* macAddress) {
+    printf("New MAC Address: %2X", macAddress[0]);
+    for (int i = 1; i < MAC_ADDRESS_LENGTH; ++i) {
+        printf(":%2X", macAddress[i]);
+    }
+}
