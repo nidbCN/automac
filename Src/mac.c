@@ -26,11 +26,11 @@ bool MAC_set(const char *interface, uint8_t *address) {
         return false;
     }
 
-    struct ifreq interfaceReq;
+    struct ifreq *interfaceReq = new(struct ifreq);
 
-    strcpy(interfaceReq.ifr_name, interface);
-    memcpy(interfaceReq.ifr_hwaddr.sa_data, address, sizeof(uint8_t) * MAC_ADDRESS_LENGTH);
-    interfaceReq.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+    strcpy(interfaceReq->ifr_name, interface);
+    memcpy(interfaceReq->ifr_hwaddr.sa_data, address, sizeof(uint8_t) * MAC_ADDRESS_LENGTH);
+    interfaceReq->ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
     if (ioctl(globalSocketHandler, SIOCSIFHWADDR, interfaceReq) < 0) {
         fprintf(stderr, "Cannot set address of interface via ioctl.\n");

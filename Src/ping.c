@@ -73,6 +73,7 @@ bool PING_sendLoop(uint32_t ip, uint ttl, uint timeoutSec, uint count,
         PING_send(sockedHandler, &socketAddress, i, callback);
     }
 
+    close(sockedHandler);
     return true;
 }
 
@@ -98,15 +99,17 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
                (struct sockaddr *) socketAddress,
                sizeof(*socketAddress)) <= 0) {
         fprintf(stderr, "Packet Sending Failed!\n");
+        callback(false, icmpSeq, -1);
         return false;
     }
 
     //receive packet
     ssize_t resultSize = recv(sockedHandler, &pingPacket, sizeof(pingPacket), 0);
+    bool resultFlag = false;
 
     if (resultSize <= 0) {
         fprintf(stderr, "Packet receive failed!\n");
-        return false;
+        resultFlag = false;
     } else {
         struct icmp *icmpHeader;
 
@@ -117,19 +120,17 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
             icmpHeader = (struct icmp *) (((char *) &pingPacket) + (ipHeader->ihl << 2));
         }
 
-        if (icmpHeader->icmp_type == ICMP_ECHO) {
-            // ???
-        }
-
         if (icmpHeader->icmp_type != ICMP_ECHOREPLY) {
             fprintf(stderr, "Error..Packet received with ICMP, type %d code %d\n",
                     icmpHeader->icmp_type, icmpHeader->icmp_code);
+            resultFlag = false;
         } else {
-            callback(true, icmpSeq, resultSize);
-
-            return true;
+            resultFlag = true;
         }
     }
+    
+    callback(resultFlag, icmpSeq, resultSize);
+    return resultFlag;
 }
 
 //int main() {
