@@ -135,21 +135,21 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
     }
 }
 
-int main() {
-    char *str = new_array(char, 18);
-    scanf("%s", str);
-
-    uint32_t address = inet_addr(str);
-
-    if (address == INADDR_NONE) {
-        fprintf(stderr, "Wrong IP Address");
-        exit(EXIT_FAILURE);
-    }
-
-    PING_sendLoop(address, 64, 3, 3, $(void, (bool success, unsigned int seq, unsigned int dataSize){
-            printf("seq=%d, re %d bytes\n", seq, dataSize);
-    }));
-
-    exit(EXIT_SUCCESS);
-}
+//int main() {
+//    char *str = new_array(char, 18);
+//    scanf("%s", str);
+//
+//    uint32_t address = inet_addr(str);
+//
+//    if (address == INADDR_NONE) {
+//        fprintf(stderr, "Wrong IP Address");
+//        exit(EXIT_FAILURE);
+//    }
+//
+//    PING_sendLoop(address, 64, 3, 3, $(void, (bool success, unsigned int seq, unsigned int dataSize){
+//            printf("seq=%d, re %d bytes\n", seq, dataSize);
+//    }));
+//
+//    exit(EXIT_SUCCESS);
+//}
 
