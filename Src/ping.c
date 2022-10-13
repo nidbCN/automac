@@ -128,7 +128,7 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
             resultFlag = true;
         }
     }
-    
+
     callback(resultFlag, icmpSeq, resultSize);
     return resultFlag;
 }

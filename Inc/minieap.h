@@ -12,10 +12,10 @@ typedef struct {
 } MessageCall;
 
 
-void MINIEAP_start();
+int MINIEAP_start(const char *path);
 
 void MINIEAP_stop();
 
-void MINIEAP_restart();
+void MINIEAP_restart(const char *path);
 
 #endif //AUTOMAC_MINIEAP_H

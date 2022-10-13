@@ -17,13 +17,14 @@ void sendLoopInvoke(bool success, unsigned int seq, unsigned int dataSize) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        printf("Usage: automac <interfaceName> <pingAddress>\n");
+    if (argc < 4) {
+        printf("Usage: automac <interfaceName> <pingAddress> <minieapPath>\n");
         exit(EXIT_SUCCESS);
     }
 
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
+    const char *minieapPath = argv[3];
 
     if (!MAC_init()) {
         fprintf(stderr, "Can not Init MAC, exit.");
@@ -62,7 +63,8 @@ int main(int argc, char *argv[]) {
 
             MAC_set(ifName, macAddress);
             MAC_print(macAddress);
-            MINIEAP_restart();
+            MINIEAP_stop();
+            MINIEAP_start(minieapPath);
         }
 
         printf("Waiting for next loop...\n");

@@ -1,13 +1,18 @@
 #include "minieap.h"
 #include "utils.h"
 #include <sys/types.h>
-#include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 pid_t MINIEAP_getPid() {
     FILE *fileHandler = fopen("/var/run/minieap.pid", "r");
+
+    if (fileHandler == NULL) {
+        return -1;
+    }
+
     char *pidStr = new_array(char, 8);
 
     for (int i = 0; i < 8; ++i) {
@@ -22,16 +27,22 @@ pid_t MINIEAP_getPid() {
     return (pid_t) atoi(pidStr);
 }
 
-void MINIEAP_start() {
-    execl("/usr/bin/minieap", " --kill", " 1", NULL);
+int MINIEAP_start(const char *path) {
+    return system(path);
 }
 
 void MINIEAP_stop() {
+    pid_t pid = MINIEAP_getPid();
+    if (pid == -1) {
+        return;
+    }
+
     kill(MINIEAP_getPid(), SIGSTOP);
 }
 
-void MINIEAP_restart() {
-    MINIEAP_stop();
-    MINIEAP_start();
+void MINIEAP_restart(const char *path) {
+//    MINIEAP_stop();
+//    MINIEAP_start(path);
+    execl(path, "restart", NULL);
 }
 
