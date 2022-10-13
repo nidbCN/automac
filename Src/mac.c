@@ -45,13 +45,13 @@ uint8_t *MAC_get(const char *interface) {
         return NULL;
     }
 
-    struct ifreq interfaceReq;
+    struct ifreq *interfaceReqPtr = new(struct ifreq);
 
-    strcpy(interfaceReq.ifr_name, interface);
-    if (ioctl(globalSocketHandler, SIOCGIFHWADDR, &interfaceReq) < 0) {
+    strcpy(interfaceReqPtr->ifr_name, interface);
+    if (ioctl(globalSocketHandler, SIOCGIFHWADDR, &interfaceReqPtr) < 0) {
         fprintf(stderr, "Cannot get address of interface via ioctl.\n");
         return NULL;
     }
 
-    return (uint8_t *) interfaceReq.ifr_hwaddr.sa_data;
+    return (uint8_t *) (interfaceReqPtr->ifr_hwaddr.sa_data);
 }

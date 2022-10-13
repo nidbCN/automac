@@ -5,6 +5,8 @@
 #ifndef AUTOMAC_UTILS_H
 #define AUTOMAC_UTILS_H
 
+#include <stdlib.h>
+
 #define MAC_ADDRESS_LENGTH (6)
 
 #define new(type) ((type*)malloc(sizeof (type)))

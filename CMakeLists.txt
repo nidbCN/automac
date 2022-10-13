@@ -5,4 +5,4 @@ include_directories(Inc)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(automac main.c Src/ping.c Src/mac.c Src/utils.c)
+add_executable(automac main.c Src/ping.c Src/mac.c Src/utils.c Src/minieap.c Inc/minieap.h)

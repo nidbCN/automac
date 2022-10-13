@@ -1,6 +1,7 @@
 #include "ping.h"
 #include "mac.h"
 #include "utils.h"
+#include "minieap.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -49,13 +50,15 @@ int main(int argc, char *argv[]) {
 
             macAddress[MAC_ADDRESS_LENGTH - 1] = randomMac1;
             macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
+
+            printf("New MAC Address: ");
+            for (int i = 0; i < MAC_ADDRESS_LENGTH; ++i) {
+
+            }
+            MAC_set(ifName, macAddress);
         }
 
-
-
+        MINIEAP_restart();
         sleep(5);
-        return 0;
     }
-
-    exit(EXIT_SUCCESS);
 }
