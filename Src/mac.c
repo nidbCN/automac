@@ -11,6 +11,7 @@ int globalSocketHandler = -1;
 
 bool MAC_init() {
     globalSocketHandler = socket(AF_UNIX, SOCK_DGRAM, 0);
+
     if (globalSocketHandler < 0) {
         fprintf(stderr, "Can not create Socket, please run under root.\n");
         return false;
@@ -21,7 +22,7 @@ bool MAC_init() {
 
 bool MAC_set(const char *interface, uint8_t *address) {
     if (globalSocketHandler == -1) {
-        fprintf(stderr, "ioctl Socket not inited. invoke MAC_init() first.\n");
+        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
         return false;
     }
 
@@ -31,7 +32,7 @@ bool MAC_set(const char *interface, uint8_t *address) {
     memcpy(interfaceReq.ifr_hwaddr.sa_data, address, sizeof(uint8_t) * MAC_ADDRESS_LENGTH);
     interfaceReq.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
-    if (ioctl(globalSocketHandler, SIOCSIFHWADDR, &interfaceReq) < 0) {
+    if (ioctl(globalSocketHandler, SIOCSIFHWADDR, interfaceReq) < 0) {
         fprintf(stderr, "Cannot set address of interface via ioctl.\n");
         return false;
     }
@@ -41,14 +42,14 @@ bool MAC_set(const char *interface, uint8_t *address) {
 
 uint8_t *MAC_get(const char *interface) {
     if (globalSocketHandler == -1) {
-        fprintf(stderr, "ioctl Socket not inited. invoke MAC_init() first.\n");
+        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
         return NULL;
     }
 
     struct ifreq *interfaceReqPtr = new(struct ifreq);
 
     strcpy(interfaceReqPtr->ifr_name, interface);
-    if (ioctl(globalSocketHandler, SIOCGIFHWADDR, &interfaceReqPtr) < 0) {
+    if (ioctl(globalSocketHandler, SIOCGIFHWADDR, interfaceReqPtr) < 0) {
         fprintf(stderr, "Cannot get address of interface via ioctl.\n");
         return NULL;
     }
@@ -56,9 +57,11 @@ uint8_t *MAC_get(const char *interface) {
     return (uint8_t *) (interfaceReqPtr->ifr_hwaddr.sa_data);
 }
 
-uint8_t *MAC_print(const uint8_t* macAddress) {
-    printf("New MAC Address: %2X", macAddress[0]);
+uint8_t *MAC_print(const uint8_t *macAddress) {
+    printf("MAC Address: %2X", macAddress[0]);
     for (int i = 1; i < MAC_ADDRESS_LENGTH; ++i) {
         printf(":%2X", macAddress[i]);
     }
+
+    putchar('\n');
 }

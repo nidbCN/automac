@@ -25,10 +25,19 @@ int main(int argc, char *argv[]) {
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
 
-    assert(MAC_init());
+    if (!MAC_init()) {
+        fprintf(stderr, "Can not Init MAC, exit.");
+        exit(EXIT_FAILURE);
+    }
 
     uint8_t *macAddress = MAC_get(ifName);
+    if (macAddress == NULL) {
+        fprintf(stderr, "Can not get MAC, exit.");
+        exit(EXIT_FAILURE);
+    }
+    MAC_print(macAddress);
 
+    printf("Start loop...\n");
     while (true) {
         uint32_t address = inet_addr(ipAddress);
 
@@ -56,6 +65,7 @@ int main(int argc, char *argv[]) {
             MINIEAP_restart();
         }
 
+        printf("Waiting for next loop...\n");
         sleep(5);
     }
 }
