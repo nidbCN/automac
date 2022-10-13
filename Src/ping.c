@@ -1,12 +1,9 @@
 #include "ping.h"
-#include "utils.h"
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/ip.h>
 
