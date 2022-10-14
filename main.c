@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    uint8_t *macAddress = MAC_get(ifName);
+    uint8_t *macAddress = MAC_getInterface(ifName);
     if (macAddress == NULL) {
         fprintf(stderr, "Can not get MAC, exit.");
         exit(EXIT_FAILURE);
@@ -63,8 +63,11 @@ int main(int argc, char *argv[]) {
             macAddress[MAC_ADDRESS_LENGTH - 1] = randomMac1;
             macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
 
-            MAC_set(ifName, macAddress);
+            MAC_setInterface(ifName, macAddress);
             MAC_print(macAddress);
+
+            printf("Restart interface.\n");
+
 
             printf("Restart miniEAP, command: %s\n", command);
             MINIEAP_restart(command);

@@ -20,7 +20,7 @@ bool MAC_init() {
     return true;
 }
 
-bool MAC_set(const char *interface, uint8_t *address) {
+bool MAC_setInterface(const char *interface, uint8_t *address) {
     if (globalSocketHandler == -1) {
         fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
         return false;
@@ -40,7 +40,7 @@ bool MAC_set(const char *interface, uint8_t *address) {
     return true;
 }
 
-uint8_t *MAC_get(const char *interface) {
+uint8_t *MAC_getInterface(const char *interface) {
     if (globalSocketHandler == -1) {
         fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
         return NULL;
@@ -56,6 +56,49 @@ uint8_t *MAC_get(const char *interface) {
 
     return (uint8_t *) (interfaceReqPtr->ifr_hwaddr.sa_data);
 }
+
+bool MAC_stopInterface(const char *interface) {
+    if (globalSocketHandler == -1) {
+        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
+        return false;
+    }
+
+    struct ifreq *interfaceReqPtr = new(struct ifreq);
+    strcpy(interfaceReqPtr->ifr_name, interface);
+
+    interfaceReqPtr->ifr_flags = (short) ((interfaceReqPtr->ifr_flags) & (~IFF_UP));
+
+    if (ioctl(globalSocketHandler, SIOCSIFFLAGS, interfaceReqPtr) < 0) {
+        fprintf(stderr, "Cannot set down of interface via ioctl.\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool MAC_startInterface(const char *interface) {
+    if (globalSocketHandler == -1) {
+        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", globalSocketHandler);
+        return false;
+    }
+
+    struct ifreq *interfaceReqPtr = new(struct ifreq);
+    strcpy(interfaceReqPtr->ifr_name, interface);
+
+    interfaceReqPtr->ifr_flags = (short) ((interfaceReqPtr->ifr_flags) | (IFF_UP));
+
+    if (ioctl(globalSocketHandler, SIOCSIFFLAGS, interfaceReqPtr) < 0) {
+        fprintf(stderr, "Cannot set up of interface via ioctl.\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool MAC_restartInterface(const char *interface) {
+    return MAC_stopInterface(interface) && MAC_startInterface(interface);
+}
+
 
 uint8_t *MAC_print(const uint8_t *macAddress) {
     printf("MAC Address: %2X", macAddress[0]);
