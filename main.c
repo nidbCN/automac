@@ -18,13 +18,13 @@ void sendLoopInvoke(bool success, unsigned int seq, unsigned int dataSize) {
 
 int main(int argc, char *argv[]) {
     if (argc < 4) {
-        printf("Usage: automac <interfaceName> <pingAddress> <minieapPath>\n");
+        printf("Usage: automac <interfaceName> <pingAddress> <command>\n");
         exit(EXIT_SUCCESS);
     }
 
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
-    const char *minieapPath = argv[3];
+    const char *command = argv[3];
 
     if (!MAC_init()) {
         fprintf(stderr, "Can not Init MAC, exit.");
@@ -51,6 +51,8 @@ int main(int argc, char *argv[]) {
 
         if (faultFlag) {
             // has fault icmp request
+            faultFlag = !faultFlag;
+
             struct timespec seed;
             clock_gettime(CLOCK_REALTIME, &seed);
             srandom(seed.tv_nsec);
@@ -63,8 +65,12 @@ int main(int argc, char *argv[]) {
 
             MAC_set(ifName, macAddress);
             MAC_print(macAddress);
-            MINIEAP_stop();
-            MINIEAP_start(minieapPath);
+
+            printf("Restart miniEAP, command: %s\n", command);
+            MINIEAP_restart(command);
+
+            printf("miniEAP restarted, waiting 30s for next test...\n");
+            sleep(30);
         }
 
         printf("Waiting for next loop...\n");

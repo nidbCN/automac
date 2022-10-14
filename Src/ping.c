@@ -86,13 +86,15 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
             .un.echo.sequence = icmpSeq,
     }};
 
-    int pingPacketMsgIndex = sizeof(pingPacket.message) - 1;
-    for (uint i = 0; i < pingPacketMsgIndex; ++i) {
-        pingPacket.message[i] = i + '0';
-    }
-    pingPacket.message[pingPacketMsgIndex] = 0;
+//    int pingPacketMsgIndex = sizeof(pingPacket.message) - 1;
+//    for (uint i = 0; i < pingPacketMsgIndex; ++i) {
+//        pingPacket.message[i] = i + '0';
+//    }
+//    pingPacket.message[pingPacketMsgIndex] = 0;
 
     pingPacket.header.checksum = checksum(&pingPacket, sizeof(pingPacket));
+
+    printf("Ready to send packet.\n");
 
     //send packet
     if (sendto(sockedHandler, &pingPacket, sizeof(pingPacket), 0,
@@ -103,7 +105,9 @@ bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSe
         return false;
     }
 
-    //receive packet
+    printf("Packet sent, ready to receive.\n");
+
+    //receive packet package
     ssize_t resultSize = recv(sockedHandler, &pingPacket, sizeof(pingPacket), 0);
     bool resultFlag = false;
 

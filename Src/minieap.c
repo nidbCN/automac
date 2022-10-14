@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
 
 pid_t MINIEAP_getPid() {
     FILE *fileHandler = fopen("/var/run/minieap.pid", "r");
@@ -27,8 +27,10 @@ pid_t MINIEAP_getPid() {
     return (pid_t) atoi(pidStr);
 }
 
-int MINIEAP_start(const char *path) {
-    return system(path);
+int MINIEAP_start(const char *command) {
+    printf("Invoke command: %s\n", command);
+
+    return system(command);
 }
 
 void MINIEAP_stop() {
@@ -40,9 +42,8 @@ void MINIEAP_stop() {
     kill(MINIEAP_getPid(), SIGSTOP);
 }
 
-void MINIEAP_restart(const char *path) {
-//    MINIEAP_stop();
-//    MINIEAP_start(path);
-    execl(path, "restart", NULL);
+void MINIEAP_restart(const char *command) {
+    MINIEAP_stop();
+    MINIEAP_start(command);
 }
 

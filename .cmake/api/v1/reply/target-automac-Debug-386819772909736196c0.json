@@ -52,7 +52,7 @@
 			[
 				{
 					"backtrace" : 2,
-					"path" : "/home/lab/code/automac/Inc"
+					"path" : "/home/nidb/codes/c_projects/automac/Inc"
 				}
 			],
 			"language" : "C",
@@ -122,6 +122,12 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
+			"path" : "Src/utils.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
 			"path" : "Src/ping.c",
 			"sourceGroupIndex" : 0
 		},
@@ -129,12 +135,6 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
 			"path" : "Src/mac.c",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "Src/utils.c",
 			"sourceGroupIndex" : 0
 		},
 		{

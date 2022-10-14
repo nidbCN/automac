@@ -55,7 +55,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/lab/code/automac"
+			"value" : "/home/nidb/codes/c_projects/automac"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -467,7 +467,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/lab/code/automac"
+			"value" : "/home/nidb/codes/c_projects/automac"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -1003,7 +1003,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/lab/code/automac"
+			"value" : "/home/nidb/codes/c_projects/automac"
 		},
 		{
 			"name" : "automac_IS_TOP_LEVEL",
@@ -1027,7 +1027,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/lab/code/automac"
+			"value" : "/home/nidb/codes/c_projects/automac"
 		}
 	],
 	"kind" : "cache",
