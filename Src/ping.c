@@ -1,13 +1,48 @@
 #include "ping.h"
+#include "utils.h"
 #include <stdio.h>
 #include <sys/types.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netinet/ip_icmp.h>
-#include <netinet/ip.h>
 
-// Calculating the Check Sum
+int PING_socketHandler = -1;
+
+bool PING_init(unsigned int ttl, unsigned int timeoutSec) {
+    if (ttl == 0) {
+        ttl = PING_TTL;
+    }
+
+    if (timeoutSec == 0) {
+        timeoutSec = PING_TIMEOUT_SEC;
+    }
+
+    struct timeval timeout = {.tv_sec = timeoutSec};
+
+    PING_socketHandler = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+
+    if (PING_socketHandler < 0) {
+        fprintf(stderr, "Can not create Socket, please run under root.\n");
+        return false;
+    }
+
+    if (setsockopt(PING_socketHandler, SOL_SOCKET, SO_RCVTIMEO,
+                   &timeout, sizeof(timeout)) != 0
+        || setsockopt(PING_socketHandler, SOL_SOCKET, SO_SNDTIMEO,
+                      &timeout, sizeof(timeout)) != 0) {
+        fprintf(stderr, "Setting timeoutSec failed!\n");
+        return false;
+    }
+
+    if (setsockopt(PING_socketHandler, SOL_IP, IP_TTL,
+                   &ttl, sizeof(ttl)) != 0) {
+        fprintf(stderr, "Setting TTL failed!\n");
+        return false;
+    }
+}
+
 unsigned short checksum(void *binary, int len) {
     unsigned short *buf = binary;
     unsigned int sum;
@@ -27,17 +62,9 @@ unsigned short checksum(void *binary, int len) {
     return result;
 }
 
-bool PING_sendLoop(uint32_t ip, uint ttl, uint timeoutSec, uint count,
-                   void callback(bool success, unsigned int seq, unsigned int dataSize)) {
-    if (ttl == 0) {
-        ttl = PING_TTL;
-    }
-
-    if (timeoutSec == 0) {
-        timeoutSec = PING_TIMEOUT_SEC;
-    }
-
-    struct timeval timeout = {.tv_sec = timeoutSec};
+unsigned int PING_sendLoop(uint32_t ip, unsigned int count, unsigned int interval,
+                           void callback(unsigned int seq, unsigned int dataSize)) {
+    unsigned int successCount = 0;
 
     struct sockaddr_in socketAddress = {
             .sin_addr.s_addr = ip,
@@ -45,113 +72,98 @@ bool PING_sendLoop(uint32_t ip, uint ttl, uint timeoutSec, uint count,
             .sin_family = AF_INET,
     };
 
-    // create socket
-    int sockedHandler = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockedHandler < 0) {
-        fprintf(stderr, "Can not create Socket, please run under root.\n");
-        return false;
-    }
-
-    if (setsockopt(sockedHandler, SOL_SOCKET, SO_RCVTIMEO,
-                   &timeout, sizeof(timeout)) != 0
-        || setsockopt(sockedHandler, SOL_SOCKET, SO_SNDTIMEO,
-                      &timeout, sizeof(timeout)) != 0) {
-        fprintf(stderr, "Setting timeoutSec failed!\n");
-        return false;
-    }
-
-    if (setsockopt(sockedHandler, SOL_IP, IP_TTL,
-                   &ttl, sizeof(ttl)) != 0) {
-        fprintf(stderr, "Setting TTL failed!\n");
-        return false;
+    // check socket
+    if (PING_socketHandler < 0) {
+        fprintf(stderr, "internet Socket not inited(%d). invoke PING_init() first.\n", PING_socketHandler);
+        return 0;
     }
 
     // socket created
-    // signal(SIGINT, intHandler);//catching interrupt
-
     for (uint i = 0; i < count; ++i) {
-        PING_send(sockedHandler, &socketAddress, i, callback);
+        successCount += PING_send(&socketAddress, i, callback);
+        sleep(interval);
     }
 
-    close(sockedHandler);
-    return true;
+    return successCount;
 }
 
-bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSeq,
-               void callback(bool success, uint seq, uint dataSize)) {
+bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
+               void callback(unsigned int seq, unsigned int dataSize)) {
+    if (PING_socketHandler < 0) {
+        fprintf(stderr, "internet Socket not inited(%d). invoke PING_init() first.\n", PING_socketHandler);
+        return false;
+    }
+
+    PING_ICMPPacket *packet = new(PING_ICMPPacket);
+    bzero(packet, sizeof(PING_ICMPPacket));
+
     // filling packet
-    PING_ICMPPacket pingPacket = {.header = {
+    struct icmphdr header = {
             .type = ICMP_ECHO,
+            .code = 0,
             .un.echo.id = getpid(),
             .un.echo.sequence = icmpSeq,
-    }};
+    };
+    packet->header = header;
 
-//    int pingPacketMsgIndex = sizeof(pingPacket.message) - 1;
-//    for (uint i = 0; i < pingPacketMsgIndex; ++i) {
-//        pingPacket.message[i] = i + '0';
-//    }
-//    pingPacket.message[pingPacketMsgIndex] = 0;
-
-    pingPacket.header.checksum = checksum(&pingPacket, sizeof(pingPacket));
+    int pingPacketMsgIndex = sizeof(packet->message) - 1;
+    for (uint i = 0; i < pingPacketMsgIndex; ++i) {
+        printf("fill %d", i);
+        packet->message[i] = i + '0';
+    }
+    packet->message[pingPacketMsgIndex] = 0;
+    packet->header.checksum = checksum(packet, sizeof(PING_ICMPPacket));
 
     printf("Ready to send packet.\n");
 
     //send packet
-    if (sendto(sockedHandler, &pingPacket, sizeof(pingPacket), 0,
+    if (sendto(PING_socketHandler, packet, sizeof(PING_ICMPPacket), 0x00,
                (struct sockaddr *) socketAddress,
                sizeof(*socketAddress)) <= 0) {
         fprintf(stderr, "Packet Sending Failed!\n");
-        callback(false, icmpSeq, -1);
         return false;
     }
 
+    //receive packet package
     printf("Packet sent, ready to receive.\n");
 
-    //receive packet package
-    ssize_t resultSize = recv(sockedHandler, &pingPacket, sizeof(pingPacket), 0);
-    bool resultFlag = false;
+    void *buffer = alloca(PING_PACKET_SIZE + 20);
+
+    ssize_t resultSize = recv(PING_socketHandler, buffer, PING_PACKET_SIZE + 20, 0x00);
+    printf("Received: %zd bytes\n", resultSize);
+
+    if (resultSize > 64) {
+        printf("Skip IP header.\n");
+        packet = buffer + 20;
+    } else {
+        packet = buffer;
+    }
 
     if (resultSize <= 0) {
         fprintf(stderr, "Packet receive failed!\n");
-        resultFlag = false;
-    } else {
-        struct icmp *icmpHeader;
-
-        if (resultSize >= 60) { //76
-            struct iphdr *ipHeader = (struct iphdr *) &pingPacket;
-
-            /* skip ip header */
-            icmpHeader = (struct icmp *) (((char *) &pingPacket) + (ipHeader->ihl << 2));
-        }
-
-        if (icmpHeader->icmp_type != ICMP_ECHOREPLY) {
-            fprintf(stderr, "Error..Packet received with ICMP, type %d code %d\n",
-                    icmpHeader->icmp_type, icmpHeader->icmp_code);
-            resultFlag = false;
-        } else {
-            resultFlag = true;
-        }
+        return false;
     }
 
-    callback(resultFlag, icmpSeq, resultSize);
-    return resultFlag;
+    printf("Parse packet: {code:%d, type:%d, id:%d, seq:%d}.\n",
+           packet->header.code, packet->header.type,
+           packet->header.un.echo.id, packet->header.un.echo.sequence);
+
+    if (packet->header.type != ICMP_ECHOREPLY) {
+        fprintf(stderr, "Error..Packet received with ICMP, type %d code %d\n",
+                packet->header.type, packet->header.code);
+        return false;
+    }
+
+    callback(icmpSeq, resultSize);
+    return true;
 }
 
-//int main() {
-//    char *str = new_array(char, 18);
-//    scanf("%s", str);
-//
-//    uint32_t address = inet_addr(str);
-//
-//    if (address == INADDR_NONE) {
-//        fprintf(stderr, "Wrong IP Address");
-//        exit(EXIT_FAILURE);
-//    }
-//
-//    PING_sendLoop(address, 64, 3, 3, $(void, (bool success, unsigned int seq, unsigned int dataSize){
-//            printf("seq=%d, re %d bytes\n", seq, dataSize);
-//    }));
-//
-//    exit(EXIT_SUCCESS);
-//}
+void PING_destroy() {
+    if (PING_socketHandler < 0) {
+        fprintf(stderr, "internet Socket not inited(%d). invoke PING_init() first.\n", PING_socketHandler);
+        return;
+    }
 
+    close(PING_socketHandler);
+    PING_socketHandler = -1;
+}

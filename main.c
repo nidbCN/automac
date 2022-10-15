@@ -6,14 +6,10 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <assert.h>
 #include <unistd.h>
 
-bool faultFlag = false;
-
-void sendLoopInvoke(bool success, unsigned int seq, unsigned int dataSize) {
-    faultFlag = !success;
-    printf("ping %s, seq=%d, re %d bytes\n", success ? "success" : "failed", seq, dataSize);
+void sendLoopInvoke(unsigned int seq, unsigned int dataSize) {
+    printf("ping success, seq=%d, re %d bytes\n", seq, dataSize);
 }
 
 int main(int argc, char *argv[]) {
@@ -22,6 +18,8 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
+    printf("v1.1.20221015-1421\n");
+
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
     const char *command = argv[3];
@@ -29,6 +27,10 @@ int main(int argc, char *argv[]) {
     if (!MAC_init()) {
         fprintf(stderr, "Can not Init MAC, exit.");
         exit(EXIT_FAILURE);
+    }
+
+    if(!PING_destroy() ) {
+
     }
 
     uint8_t *macAddress = MAC_getInterface(ifName);
@@ -47,12 +49,8 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        PING_sendLoop(address, 64, 3, 3, &sendLoopInvoke);
-
-        if (faultFlag) {
-            // has fault icmp request
-            faultFlag = !faultFlag;
-
+        if (PING_sendLoop(address, 249, 3, 3, 1, &sendLoopInvoke) == 0) {
+            // all icmp request failed.
             struct timespec seed;
             clock_gettime(CLOCK_REALTIME, &seed);
             srandom(seed.tv_nsec);
@@ -67,16 +65,16 @@ int main(int argc, char *argv[]) {
             MAC_print(macAddress);
 
             printf("Restart interface.\n");
-
+            MAC_restartInterface(ifName);
 
             printf("Restart miniEAP, command: %s\n", command);
             MINIEAP_restart(command);
 
-            printf("miniEAP restarted, waiting 30s for next test...\n");
-            sleep(30);
+            printf("miniEAP restarted, waiting 30s for next loop...\n");
+            sleep(20);
         }
 
-        printf("Waiting for next loop...\n");
-        sleep(5);
+        printf("Waiting 10s for next loop...\n");
+        sleep(10);
     }
 }

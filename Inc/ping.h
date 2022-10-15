@@ -20,10 +20,14 @@ typedef struct {
     char message[PING_PACKET_SIZE - sizeof(struct icmphdr)];
 } PING_ICMPPacket;
 
-bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, uint icmpSeq,
-               void callback(bool success, uint seq, uint dataSize));
+bool PING_init(unsigned int ttl, unsigned int timeoutSec);
 
-bool PING_sendLoop(uint32_t ip, uint ttl, uint timeoutSec, uint count,
-                   void callback(bool success, unsigned int seq, unsigned int dataSize));
+bool PING_send(int sockedHandler, struct sockaddr_in *socketAddress, unsigned int icmpSeq,
+               void callback(unsigned int seq, unsigned int dataSize));
+
+unsigned int PING_sendLoop(uint32_t ip, unsigned int count, unsigned int interval,
+                           void callback(unsigned int seq, unsigned int dataSize));
+
+void PING_destroy();
 
 #endif

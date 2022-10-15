@@ -18,4 +18,6 @@ bool MAC_setInterface(const char *interface, uint8_t *address);
 
 uint8_t *MAC_print(const uint8_t *macAddress);
 
+bool MAC_destroy();
+
 #endif //AUTOMAC_MAC_H
