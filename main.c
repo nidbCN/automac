@@ -18,24 +18,25 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    printf("v1.1.20221015-1421\n");
+    printf("v1.1.20221015-1700\n");
 
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
     const char *command = argv[3];
 
     if (!MAC_init()) {
-        fprintf(stderr, "Can not Init MAC, exit.");
+        fprintf(stderr, "Can not Init MAC, exit.\n");
         exit(EXIT_FAILURE);
     }
 
-    if(!PING_destroy() ) {
-
+    if (!PING_init(249, 3)) {
+        fprintf(stderr, "Can not Init ICMP, exit.\n");
+        exit(EXIT_FAILURE);
     }
 
     uint8_t *macAddress = MAC_getInterface(ifName);
     if (macAddress == NULL) {
-        fprintf(stderr, "Can not get MAC, exit.");
+        fprintf(stderr, "Can not get MAC, exit.\n");
         exit(EXIT_FAILURE);
     }
     MAC_print(macAddress);
@@ -45,11 +46,11 @@ int main(int argc, char *argv[]) {
         uint32_t address = inet_addr(ipAddress);
 
         if (address == INADDR_NONE) {
-            fprintf(stderr, "Wrong IP Address");
+            fprintf(stderr, "Wrong IP Address, exit.\n");
             exit(EXIT_FAILURE);
         }
 
-        if (PING_sendLoop(address, 249, 3, 3, 1, &sendLoopInvoke) == 0) {
+        if (PING_sendLoop(address, 3, 1, &sendLoopInvoke) == 0) {
             // all icmp request failed.
             struct timespec seed;
             clock_gettime(CLOCK_REALTIME, &seed);
