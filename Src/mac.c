@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 int MAC_socketHandler = -1;
 
@@ -14,7 +15,7 @@ bool MAC_init() {
     MAC_socketHandler = socket(AF_UNIX, SOCK_DGRAM, 0);
 
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "Can not create Socket, please run under root.\n");
+        fprintf(stderr, "Can not create Socket: (%d)%s\n", errno, strerror(errno));
         return false;
     }
 
@@ -23,7 +24,7 @@ bool MAC_init() {
 
 bool MAC_setInterface(const char *interface, uint8_t *address) {
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", MAC_socketHandler);
+        fprintf(stderr, "ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
         return false;
     }
 
@@ -34,7 +35,7 @@ bool MAC_setInterface(const char *interface, uint8_t *address) {
     interfaceReq->ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
     if (ioctl(MAC_socketHandler, SIOCSIFHWADDR, interfaceReq) < 0) {
-        fprintf(stderr, "Cannot set address of interface via ioctl.\n");
+        fprintf(stderr, "Cannot set address of interface via ioctl: (%d)%s\n", errno, strerror(errno));
         return false;
     }
 
@@ -43,7 +44,7 @@ bool MAC_setInterface(const char *interface, uint8_t *address) {
 
 uint8_t *MAC_getInterface(const char *interface) {
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", MAC_socketHandler);
+        fprintf(stderr, "ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
         return NULL;
     }
 
@@ -51,7 +52,7 @@ uint8_t *MAC_getInterface(const char *interface) {
 
     strcpy(interfaceReqPtr->ifr_name, interface);
     if (ioctl(MAC_socketHandler, SIOCGIFHWADDR, interfaceReqPtr) < 0) {
-        fprintf(stderr, "Cannot get address of interface via ioctl.\n");
+        fprintf(stderr, "Cannot get address of interface via ioctl: (%d)%s\n", errno, strerror(errno));
         return NULL;
     }
 
@@ -60,7 +61,7 @@ uint8_t *MAC_getInterface(const char *interface) {
 
 bool MAC_stopInterface(const char *interface) {
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", MAC_socketHandler);
+        fprintf(stderr, "ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
         return false;
     }
 
@@ -70,7 +71,7 @@ bool MAC_stopInterface(const char *interface) {
     interfaceReqPtr->ifr_flags = (short) ((interfaceReqPtr->ifr_flags) & (~IFF_UP));
 
     if (ioctl(MAC_socketHandler, SIOCSIFFLAGS, interfaceReqPtr) < 0) {
-        fprintf(stderr, "Cannot set down of interface via ioctl.\n");
+        fprintf(stderr, "Cannot set down of interface via ioctl: (%d)%s\n", errno, strerror(errno));
         return false;
     }
 
@@ -79,7 +80,7 @@ bool MAC_stopInterface(const char *interface) {
 
 bool MAC_startInterface(const char *interface) {
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", MAC_socketHandler);
+        fprintf(stderr, "ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
         return false;
     }
 
@@ -89,7 +90,7 @@ bool MAC_startInterface(const char *interface) {
     interfaceReqPtr->ifr_flags = (short) ((interfaceReqPtr->ifr_flags) | (IFF_UP));
 
     if (ioctl(MAC_socketHandler, SIOCSIFFLAGS, interfaceReqPtr) < 0) {
-        fprintf(stderr, "Cannot set up of interface via ioctl.\n");
+        fprintf(stderr, "Cannot set up of interface via ioctl: (%d)%s\n", errno, strerror(errno));
         return false;
     }
 
@@ -111,7 +112,7 @@ uint8_t *MAC_print(const uint8_t *macAddress) {
 
 bool MAC_destroy() {
     if (MAC_socketHandler < 0) {
-        fprintf(stderr, "ioctl Socket not inited(%d). invoke MAC_init() first.\n", MAC_socketHandler);
+        fprintf(stderr, "ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
         return false;
     }
 
