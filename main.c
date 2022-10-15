@@ -7,9 +7,16 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 void sendLoopInvoke(unsigned int seq, unsigned int dataSize) {
     printf("ping success, seq=%d, re %d bytes\n", seq, dataSize);
+}
+
+void interruptHandler(int dummy) {
+    MAC_destroy();
+    PING_destroy();
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]) {
@@ -18,7 +25,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    printf("v1.1.20221015-1700\n");
+    printf("v1.2.20221015-1806\n");
 
     const char *ifName = argv[1];
     const char *ipAddress = argv[2];
@@ -42,6 +49,9 @@ int main(int argc, char *argv[]) {
     MAC_print(macAddress);
 
     printf("Start loop...\n");
+
+    signal(SIGINT, interruptHandler);
+
     while (true) {
         uint32_t address = inet_addr(ipAddress);
 
