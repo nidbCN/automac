@@ -1,6 +1,7 @@
 
 # Created by https://www.toptal.com/developers/gitignore/api/cmake,clion,c
 # Edit at https://www.toptal.com/developers/gitignore?templates=cmake,clion,c
+.cmake
 
 ### C ###
 # Prerequisites
