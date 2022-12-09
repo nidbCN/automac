@@ -1,20 +1,22 @@
-#include "ping.h"
+#line 1 "main.c"
+
+#include "log.h"
 #include "mac.h"
+#include "ping.h"
 #include "utils.h"
-#include "minieap.h"
-#include <ctype.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
+
 #include <arpa/inet.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <signal.h>
 
 #define HELP_INFO "Try 'automac -h' for more information."
 
 void sendLoopInvoke(unsigned int seq, unsigned int dataSize) {
-    printf("ping success, seq=%d, re %d bytes\n", seq, dataSize);
+    log_info("ping success, seq=%d, receive %d bytes.", seq, dataSize);
 }
 
 void interruptHandler(int dummy) {
@@ -30,27 +32,27 @@ int main(int argc, char *argv[]) {
     char *execCommand = NULL;
 
     // no argument
-    if (argc < 1) {
-        fprintf(stdout, "Usage: automac -a <IP> -n <IF> [options...]\n"HELP_INFO);
-        exit(EXIT_FAILURE);
+    if (argc < 2) {
+        log_info("Usage: automac -a <IP> -n <IF> [options...]\n"HELP_INFO);
+        exit(EXIT_SUCCESS);
     }
 
     // parse arguments
-    char opt;
-    while ((opt = (char) getopt(argc, argv, "hvn:a:c:")) != EOF) {
+    int opt;
+    while ((opt = getopt(argc, argv, "hvn:a:c:")) != EOF) {
         switch (opt) {
             case 'h':
                 // h for help
-                printf("Usage: automac -a <IP> -n <IF> [options...]\n"
-                       " -a <address>   IP address to test internet status\n"
-                       " -n <if name>   Interface name to change MAC address\n"
-                       " -c <command>   Execute a command after changed success\n"
-                       " -h             Get help for commands\n"
-                       " -v             Show version number and quit");
+                fprintf(stdout, "Usage: automac -a <IP> -n <IF> [options...]");
+                fprintf(stdout, "  -a <address>    IP address to test internet status");
+                fprintf(stdout, "  -n <if name>    Interface name to change MAC address");
+                fprintf(stdout, "  -c <command>    Execute a command after changed success");
+                fprintf(stdout, "  -h              Get help for commands");
+                fprintf(stdout, "  -v              Show version number and quit");
                 exit(EXIT_SUCCESS);
             case 'v':
                 // v for version
-                printf("automac v1.2.1-2022.12.08");
+                log_info("automac v1.2.1-2022.12.08");
                 exit(EXIT_SUCCESS);
 
             case 'n':
@@ -68,18 +70,7 @@ int main(int argc, char *argv[]) {
                 break;
             case '?':
                 // ? for unmatched argument
-                if (optopt == 'n' || optopt == 'a')
-                    fprintf(stderr,
-                            "automac: option requires an argument -- '%c'\n" HELP_INFO,
-                            optopt);
-                else if (isprint(optopt))
-                    fprintf(stderr,
-                            "automac: invalid option -- '%c'\n" HELP_INFO,
-                            optopt);
-                else
-                    fprintf(stderr,
-                            "automac: invalid option --'0x%x'\n" HELP_INFO,
-                            optopt);
+                fprintf(stdout, HELP_INFO);
                 exit(EXIT_FAILURE);
             default:
                 abort();
@@ -87,31 +78,32 @@ int main(int argc, char *argv[]) {
     }
 
     if (!MAC_init()) {
-        fprintf(stderr, "Can not Init MAC, exit.\n");
+        log_fatal("Can not Init MAC, exit.");
         exit(EXIT_FAILURE);
     }
 
     if (!PING_init(249, 3)) {
-        fprintf(stderr, "Can not Init ICMP, exit.\n");
+        log_fatal("Can not Init ICMP, exit.");
         exit(EXIT_FAILURE);
     }
 
     uint8_t *macAddress = MAC_getInterface(ifName);
     if (macAddress == NULL) {
-        fprintf(stderr, "Can not get MAC, exit.\n");
+        log_fatal("Can not get MAC, exit.");
         exit(EXIT_FAILURE);
     }
-    MAC_print(macAddress);
 
-    printf("Start loop...\n");
+    log_debug("Current MAC address: %s", MAC_toString(macAddress));
 
     signal(SIGINT, interruptHandler);
+
+    log_info("Start loop...");
 
     while (true) {
         uint32_t address = inet_addr(ipAddress);
 
         if (address == INADDR_NONE) {
-            fprintf(stderr, "Wrong IP Address, exit.\n");
+            log_fatal("Wrong IP Address, exit.");
             exit(EXIT_FAILURE);
         }
 
@@ -128,20 +120,21 @@ int main(int argc, char *argv[]) {
             macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
 
             MAC_setInterface(ifName, macAddress);
-            MAC_print(macAddress);
+            log_info("Current MAC address: %s", MAC_toString(macAddress));
 
             MAC_restartInterface(ifName);
 
             // MINIEAP_restart(execCommand);
             if (cflag) {
+                log_info("Execute custom command: %s", execCommand);
                 system(execCommand);
             }
 
-            fprintf(stdout, "Waiting 30s for next loop...\n");
+            log_info("Waiting 30s for next loop...");
             sleep(20);
         }
 
-        fprintf(stdout, "Waiting 10s for next loop...\n");
+        log_info("Waiting 10s for next loop...");
         sleep(10);
     }
 }
