@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
 
             // MINIEAP_restart(execCommand);
             if (cflag) {
-                log_info("Execute custom command: %s", execCommand);
-                system(execCommand);
+                int result = system(execCommand);
+                log_info("Command `%s` exit with %d", execCommand, result);
             }
 
             log_info("Waiting 30s for next loop...");
