@@ -13,13 +13,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int MAC_socketHandler = -1;
+int MAC_socketHandler = EOF;
 
 bool MAC_init() {
     MAC_socketHandler = socket(AF_UNIX, SOCK_DGRAM, 0);
 
     if (MAC_socketHandler == EOF) {
-        log_error("Can not create socket.(%d: %s)\n", errno, strerror(errno));
+        log_error("Can not create socket.(%d: %s)", errno, strerror(errno));
         return false;
     }
 
@@ -27,9 +27,9 @@ bool MAC_init() {
     return true;
 }
 
-bool MAC_setInterface(const char *interface, uint8_t *address) {
-    if (MAC_socketHandler < 0) {
-        log_error("ioctl Socket not inited(%d), invoke MAC_init() first.\n", MAC_socketHandler);
+bool MAC_setHardwareAddress(const char *interface, uint8_t *address) {
+    if (MAC_socketHandler == EOF) {
+        log_error("ioctl Socket not inited(%d), invoke MAC_init() first.", MAC_socketHandler);
         return false;
     }
 
@@ -47,7 +47,7 @@ bool MAC_setInterface(const char *interface, uint8_t *address) {
     return true;
 }
 
-uint8_t *MAC_getInterface(const char *interface) {
+uint8_t *MAC_getHardwareAddress(const char *interface) {
     if (MAC_socketHandler < 0) {
         log_error("ioctl Socket not inited(%d), invoke MAC_init() first.", MAC_socketHandler);
         return NULL;

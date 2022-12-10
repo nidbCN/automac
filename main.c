@@ -26,6 +26,10 @@ void interruptHandler(int dummy) {
 }
 
 int main(int argc, char *argv[]) {
+#ifdef DEBUG
+    log_set_level(LOG_DEBUG);
+#endif
+
     bool cflag = false;
     char *ifName = NULL;
     char *ipAddress = NULL;
@@ -43,12 +47,12 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 'h':
                 // h for help
-                fprintf(stdout, "Usage: automac -a <IP> -n <IF> [options...]");
-                fprintf(stdout, "  -a <address>    IP address to test internet status");
-                fprintf(stdout, "  -n <if name>    Interface name to change MAC address");
-                fprintf(stdout, "  -c <command>    Execute a command after changed success");
-                fprintf(stdout, "  -h              Get help for commands");
-                fprintf(stdout, "  -v              Show version number and quit");
+                fprintf(stdout, "Usage: automac -a <IP> -n <IF> [options...]\n"
+                                "  -a <address>     IP address to test internet status\n"
+                                "  -n <if name>     Interface name to change MAC address\n"
+                                "  -c <command>     Execute a command after changed success\n"
+                                "  -h               Get help for commands\n"
+                                "  -v               Show version number and quit");
                 exit(EXIT_SUCCESS);
             case 'v':
                 // v for version
@@ -87,7 +91,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    uint8_t *macAddress = MAC_getInterface(ifName);
+    uint8_t *macAddress = MAC_getHardwareAddress(ifName);
     if (macAddress == NULL) {
         log_fatal("Can not get MAC, exit.");
         exit(EXIT_FAILURE);
@@ -119,7 +123,7 @@ int main(int argc, char *argv[]) {
             macAddress[MAC_ADDRESS_LENGTH - 1] = randomMac1;
             macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
 
-            MAC_setInterface(ifName, macAddress);
+            MAC_setHardwareAddress(ifName, macAddress);
             log_info("Current MAC address: %s", MAC_toString(macAddress));
 
             MAC_restartInterface(ifName);
