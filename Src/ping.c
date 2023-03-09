@@ -71,8 +71,13 @@ bool PING_init(unsigned int ttl, unsigned int timeoutSec) {
         return false;
     }
 
-    if (setsockopt(PING_socketHandler, SOL_IP, IP_TTL,
-                   &ttl, sizeof(ttl)) != 0) {
+    if (setsockopt(PING_socketHandler, 
+#ifdef __linux__
+		SOL_IP,
+#else
+		IPPROTO_IP,
+#endif
+		IP_TTL, &ttl, sizeof(ttl)) != 0) {
         log_error("Setting TTL failed.(%d: %s)", errno, strerror(errno));
         return false;
     }
@@ -115,14 +120,14 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
 
     // filling packet
     bzero(PING_sendPacket, sizeof(PING_IcmpPacket));
-    struct icmphdr header = {
+    PING_IcmpHeader header = {
             .type = ICMP_ECHO,
             .code = 0,
             .un.echo.id = getpid(),
+	    header.un.echo.sequence = icmpSeq,
     };
-    PING_sendPacket->header = header;
-    PING_sendPacket->header.un.echo.sequence = icmpSeq;
-    PING_sendPacket->header.checksum = PING_checkSum(PING_sendPacket, sizeof(PING_IcmpPacket));
+    PING_sendPacket->unHeader.header = header;
+    PING_sendPacket->unHeader.header.checksum = PING_checkSum(PING_sendPacket, sizeof(PING_IcmpPacket));
 
     //send packet
     if (sendto(PING_socketHandler, PING_sendPacket, sizeof(PING_IcmpPacket), 0x00,
@@ -131,7 +136,7 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
         log_error("Packet sending failed!");
         return false;
     }
-    log_debug("Send packet with seq=%d", PING_sendPacket->header.un.echo.sequence);
+    log_debug("Send packet with seq=%d", PING_sendPacket->unHeader.header.un.echo.sequence);
 
     //receive packet package
     bzero(PING_receivePacket, sizeof(PING_IpIcmpPacket));
@@ -152,12 +157,12 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
     }
 
     log_debug("Parse packet: {code:%d, type:%d, id:%d, seq:%d}.",
-              packet->header.code, packet->header.type,
-              packet->header.un.echo.id, packet->header.un.echo.sequence);
+              packet->unHeader.header.code, packet->unHeader.header.type,
+              packet->unHeader.header.un.echo.id, packet->unHeader.header.un.echo.sequence);
 
-    if (packet->header.type != ICMP_ECHOREPLY) {
+    if (packet->unHeader.header.type != ICMP_ECHOREPLY) {
         log_error("Packet received with ICMP type %d,code %d.",
-                  packet->header.type, packet->header.code);
+                  packet->unHeader.header.type, packet->unHeader.header.code);
         return false;
     }
 
