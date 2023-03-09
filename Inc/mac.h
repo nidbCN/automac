@@ -1,6 +1,7 @@
 #ifndef AUTOMAC_MAC_H
 #define AUTOMAC_MAC_H
 
+#include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 

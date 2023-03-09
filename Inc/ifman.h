@@ -5,6 +5,7 @@
 #ifndef AUTOMAC_IFMAN_H
 #define AUTOMAC_IFMAN_H
 
+#include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
