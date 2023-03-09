@@ -40,6 +40,15 @@ bool IF_checkHandler() {
     return true;
 }
 
+bool IF_destroy() {
+    if (!IF_checkHandler()) return false;
+
+    close(IF_socketHandler);
+    IF_socketHandler = -1;
+    return true;
+
+}
+
 bool IF_addFlag(const char *interfaceName, uint16_t flag) {
     if (!IF_checkHandler()) {
         return false;
@@ -130,4 +139,6 @@ bool IF_setHardwareAddress(const char *interfaceName, HardwareAddress *address) 
         log_error("Cannot set address of interface via ioctl.(%d: %s)", errno, strerror(errno));
         return false;
     }
+
+    return true;
 }

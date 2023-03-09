@@ -20,4 +20,22 @@ typedef struct _hardwareAddress {
     const char *inString;
 } HardwareAddress;
 
+bool IF_init();
+
+bool IF_checkHandler();
+
+bool IF_destroy();
+
+bool IF_addFlag(const char *interfaceName, uint16_t flag);
+
+bool IF_removeFlag(const char *interfaceName, uint16_t flag);
+
+bool IF_up(const char *interfaceName);
+
+bool IF_down(const char *interfaceName);
+
+HardwareAddress *IF_getHardwareAddress(const char *interfaceName);
+
+bool IF_setHardwareAddress(const char *interfaceName, HardwareAddress *address);
+
 #endif //AUTOMAC_IFMAN_H
