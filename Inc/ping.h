@@ -1,6 +1,7 @@
 #ifndef AUTOMAC_PING_H
 #define AUTOMAC_PING_H
 
+#include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <netinet/ip.h>
