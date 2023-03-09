@@ -1,6 +1,5 @@
 #include "ifman.h"
 #include "log.h"
-#include "mac.h"
 #include "utils.h"
 
 #include <errno.h>

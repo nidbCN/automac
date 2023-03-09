@@ -1,7 +1,7 @@
 #line 1 "main.c"
 
 #include "log.h"
-#include "mac.h"
+#include "ifman.h"
 #include "ping.h"
 #include "utils.h"
 
@@ -20,9 +20,9 @@ void sendLoopInvoke(unsigned int seq, unsigned int dataSize) {
 }
 
 void interruptHandler(int dummy) {
-    MAC_destroy();
+    IF_destroy();
     PING_destroy();
-    exit(EXIT_SUCCESS);
+    exit(dummy);
 }
 
 int main(int argc, char *argv[]) {
@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (!MAC_init()) {
-        log_fatal("Can not Init MAC, exit.");
+    if (!IF_init()) {
+        log_fatal("Can not Init interface manager, exit.");
         exit(EXIT_FAILURE);
     }
 
@@ -91,13 +91,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    uint8_t *macAddress = MAC_getHardwareAddress(ifName);
+    HardwareAddress *macAddress = IF_getHardwareAddress(ifName);
     if (macAddress == NULL) {
         log_fatal("Can not get MAC, exit.");
         exit(EXIT_FAILURE);
     }
 
-    log_debug("Current MAC address: %s", MAC_toString(macAddress));
+    log_debug("Current MAC address: %s", macAddress->inString);
 
     signal(SIGINT, interruptHandler);
 
@@ -120,13 +120,14 @@ int main(int argc, char *argv[]) {
             uint8_t randomMac1 = random() & 0xFF;
             uint8_t randomMac2 = random() & 0xFF;
 
-            macAddress[MAC_ADDRESS_LENGTH - 1] = randomMac1;
-            macAddress[MAC_ADDRESS_LENGTH - 2] = randomMac2;
+            macAddress->inBinary[MAC_ADDRESS_LENGTH - 1] = randomMac1;
+            macAddress->inBinary[MAC_ADDRESS_LENGTH - 2] = randomMac2;
 
-            MAC_setHardwareAddress(ifName, macAddress);
-            log_info("Current MAC address: %s", MAC_toString(macAddress));
+            IF_setHardwareAddress(ifName, macAddress);
+            log_info("Current MAC address: %s", macAddress->inString);
 
-            MAC_restartInterface(ifName);
+            IF_down(ifName);
+            IF_up(ifName);
 
             // MINIEAP_restart(execCommand);
             if (cflag) {

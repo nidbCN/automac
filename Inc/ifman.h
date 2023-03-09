@@ -16,7 +16,7 @@
 #include <time.h>
 #include <unistd.h>
 
-typedef struct _hardwareAddress {
+typedef struct {
     uint8_t inBinary[6];
     const char *inString;
 } HardwareAddress;
