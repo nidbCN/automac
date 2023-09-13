@@ -19,4 +19,7 @@
 })
 #define $ lambda
 
+const char *DebugPrintHex(void *data, size_t size);
+const char *DebugPrintBin(void *data, size_t size);
+
 #endif //AUTOMAC_UTILS_H
