@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <oping.h>
+#include <arpa/inet.h>
 
 int PING_socketHandler = EOF;
 PING_IcmpPacket *PING_sendPacket = NULL;
@@ -58,7 +60,6 @@ bool PING_init(unsigned int ttl, unsigned int timeoutSec) {
 
     PING_socketHandler = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
-
     if (!PING_checkHandler()) {
         return false;
     }
@@ -71,19 +72,19 @@ bool PING_init(unsigned int ttl, unsigned int timeoutSec) {
         return false;
     }
 
-    if (setsockopt(PING_socketHandler, 
+    if (setsockopt(PING_socketHandler,
 #ifdef __linux__
-		SOL_IP,
+                   SOL_IP,
 #else
-		IPPROTO_IP,
+            IPPROTO_IP,
 #endif
-		IP_TTL, &ttl, sizeof(ttl)) != 0) {
+                   IP_TTL, &ttl, sizeof(ttl)) != 0) {
         log_error("Setting TTL failed.(%d: %s)", errno, strerror(errno));
         return false;
     }
 
-    PING_sendPacket = malloc(sizeof(PING_IcmpPacket));
-    PING_receivePacket = malloc(sizeof(PING_IpIcmpPacket));
+    PING_sendPacket = new(PING_IcmpPacket);
+    PING_receivePacket = new(PING_IpIcmpPacket);
     bzero(PING_receivePacket, sizeof(PING_IpIcmpPacket));
     return true;
 }
@@ -118,16 +119,21 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
         return false;
     }
 
+    uint16_t icmpId = (uint16_t) getpid();
+
     // filling packet
     bzero(PING_sendPacket, sizeof(PING_IcmpPacket));
     PING_IcmpHeader header = {
             .type = ICMP_ECHO,
             .code = 0,
-            .un.echo.id = getpid(),
-	    header.un.echo.sequence = icmpSeq,
+            .un.echo.id = icmpId,
+            header.un.echo.sequence = icmpSeq,
     };
+
     PING_sendPacket->unHeader.header = header;
     PING_sendPacket->unHeader.header.checksum = PING_checkSum(PING_sendPacket, sizeof(PING_IcmpPacket));
+
+//    printf("%s", DebugPrintBin(PING_sendPacket, sizeof(PING_IcmpPacket)));
 
     //send packet
     if (sendto(PING_socketHandler, PING_sendPacket, sizeof(PING_IcmpPacket), 0x00,
@@ -136,38 +142,69 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
         log_error("Packet sending failed!");
         return false;
     }
-    log_debug("Send packet with seq=%d", PING_sendPacket->unHeader.header.un.echo.sequence);
+    log_debug("Send packet with id=%d, seq=%d",
+              PING_sendPacket->unHeader.header.un.echo.id,
+              PING_sendPacket->unHeader.header.un.echo.sequence);
 
     //receive packet package
     bzero(PING_receivePacket, sizeof(PING_IpIcmpPacket));
 
-    ssize_t resultSize = recv(PING_socketHandler, PING_receivePacket, sizeof(PING_IpIcmpPacket), MSG_DONTWAIT);
-    PING_IcmpPacket *packet;
-    if (resultSize <= 0) {
-        log_error("Packet receive failed.(%d: %s)", errno, strerror(errno));
-        return false;
-    }
+    struct sockaddr *sourceAddr = new(struct sockaddr);
+    bzero(sourceAddr, sizeof(struct sockaddr));
+    socklen_t addrLen = sizeof(struct sockaddr);
 
-    log_debug("Package sent and received: %zd bytes.", resultSize);
-    if (resultSize > 64) {
-        log_debug("Skip IP header.");
-        packet = &(PING_receivePacket->icmpPacket);
-    } else {
-        packet = (PING_IcmpPacket *) PING_receivePacket;
-    }
+    uint8_t retry = 0;
+    while (retry <= 3) {
+        ssize_t resultSize = recvfrom(PING_socketHandler, PING_receivePacket, sizeof(PING_IpIcmpPacket), 0x00,
+                                      sourceAddr,
+                                      &addrLen);
 
-    log_debug("Parse packet: {code:%d, type:%d, id:%d, seq:%d}.",
-              packet->unHeader.header.code, packet->unHeader.header.type,
-              packet->unHeader.header.un.echo.id, packet->unHeader.header.un.echo.sequence);
+        log_debug("Received packet hex:\n %s", DebugPrintHex(PING_receivePacket, resultSize));
 
-    if (packet->unHeader.header.type != ICMP_ECHOREPLY) {
-        log_error("Packet received with ICMP type %d,code %d.",
-                  packet->unHeader.header.type, packet->unHeader.header.code);
-        return false;
-    }
+        if (resultSize <= 0) {
+            log_error("Packet receive failed.(%d: %s)", errno, strerror(errno));
+            if (errno == 110) {
+                return false;
+            } else {
+                retry++;
+                break;
+            }
+        }
 
-    callback(icmpSeq, resultSize);
-    return true;
+        char *sourceAddrStr = new_array(char, 16);
+        bzero(sourceAddrStr, 16);
+        inet_ntop(AF_INET, sourceAddr->sa_data + 2, sourceAddrStr, 16);
+
+        printf("sip:%s", DebugPrintHex(sourceAddr->sa_data + 2, 16));
+
+        log_debug("Received: %zd bytes from %s.", resultSize, sourceAddrStr);
+
+        PING_IcmpPacket *packet = &(PING_receivePacket->icmpPacket);
+
+        log_debug("Parse packet: {code:%d, type:%d, id:%d, seq:%d}.",
+                  packet->unHeader.header.code, packet->unHeader.header.type,
+                  packet->unHeader.header.un.echo.id, packet->unHeader.header.un.echo.sequence);
+
+        if (packet->unHeader.header.un.echo.id != icmpId
+            || packet->unHeader.header.un.echo.sequence != icmpSeq) {
+            log_debug("Packet echo id(%d) or seq(%d) not match, drop.",
+                      packet->unHeader.header.un.echo.id,
+                      packet->unHeader.header.un.echo.sequence);
+            break;
+        }
+
+        // has received match packet.
+        if (packet->unHeader.header.type != ICMP_ECHOREPLY) {
+            log_error("Packet received with ICMP type %d,code %d.",
+                      packet->unHeader.header.type, packet->unHeader.header.code);
+            return false;
+        }
+
+        callback(icmpSeq, resultSize);
+        return true;
+    };
+    // retry out, finally failed.
+    return false;
 }
 
 void PING_destroy() {

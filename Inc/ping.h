@@ -5,14 +5,16 @@
 #include <sys/socket.h>
 #include <stdbool.h>
 #include <stdint.h>
+
 #ifdef __FreeBSD__
-    #include <netinet/in.h>
+#include <netinet/in.h>
 #endif
+
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 
 // ICMP echo packet size
-#define PING_PACKET_SIZE (64)
+#define PING_PACKET_DATA_SIZE (64)
 
 // timeout(in second)
 #define PING_TIMEOUT_SEC (5)
@@ -22,22 +24,22 @@
 
 // ping header structure
 typedef struct {
-            uint_least8_t type;
-            uint_least8_t code;
-            uint_least16_t checksum;
-            union {
-                struct {
-                    uint_least16_t id;
-                    uint_least16_t sequence;
-                } echo;
-                uint_least32_t gateway;
-                struct {
-                    uint_least16_t thisIsUnused;
-                    uint_least16_t mtu;
-                } frag;
-                uint_least16_t reserved[4];
-            } un;
-        } PING_IcmpHeader;      // linux style
+    uint_least8_t type;
+    uint_least8_t code;
+    uint_least16_t checksum;
+    union {
+        struct {
+            uint_least16_t id;
+            uint_least16_t sequence;
+        } echo;
+        uint_least32_t gateway;
+        struct {
+            uint_least16_t thisIsUnused;
+            uint_least16_t mtu;
+        } frag;
+        uint_least16_t reserved[4];
+    } un;
+} PING_IcmpHeader;      // linux style
 
 // ping packet structure
 typedef struct {
@@ -47,9 +49,9 @@ typedef struct {
 #else
         struct icmp bsdHeader;
 #endif
-	PING_IcmpHeader header;
+        PING_IcmpHeader header;
     } unHeader;
-    char message[PING_PACKET_SIZE - sizeof(struct icmphdr)];
+    char message[PING_PACKET_DATA_SIZE - sizeof(struct icmphdr)];
 } PING_IcmpPacket;
 
 typedef struct {
