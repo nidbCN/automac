@@ -142,6 +142,7 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
         log_error("Packet sending failed!");
         return false;
     }
+
     log_debug("Send packet with id=%d, seq=%d",
               PING_sendPacket->unHeader.header.un.echo.id,
               PING_sendPacket->unHeader.header.un.echo.sequence);
@@ -153,31 +154,30 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
     bzero(sourceAddr, sizeof(struct sockaddr));
     socklen_t addrLen = sizeof(struct sockaddr);
 
-    uint8_t retry = 0;
-    while (retry <= 3) {
+#define PACKET_RETRY_TIMES (8)
+    uint8_t packetRetryTimes = 0;
+    while (packetRetryTimes <= PACKET_RETRY_TIMES) {
         ssize_t resultSize = recvfrom(PING_socketHandler, PING_receivePacket, sizeof(PING_IpIcmpPacket), 0x00,
                                       sourceAddr,
                                       &addrLen);
 
-        log_debug("Received packet hex:\n %s", DebugPrintHex(PING_receivePacket, resultSize));
-
         if (resultSize <= 0) {
+            // socket error
             log_error("Packet receive failed.(%d: %s)", errno, strerror(errno));
-            if (errno == 110) {
-                return false;
-            } else {
-                retry++;
-                break;
-            }
+            return false;
+        } else if (resultSize >= 1024) {
+            // socket no data and a random size returned.
+            log_debug("Received packet too large(%zd bytes), drop.");
+            return false;
+        } else {
+            // packet received correctly.
+            char *sourceAddrStr = new_array(char, 16);
+            bzero(sourceAddrStr, 16);
+            inet_ntop(AF_INET, sourceAddr->sa_data + 2, sourceAddrStr, 16);
+            log_debug("Received: %zd bytes from %s.", resultSize, sourceAddrStr);
         }
 
-        char *sourceAddrStr = new_array(char, 16);
-        bzero(sourceAddrStr, 16);
-        inet_ntop(AF_INET, sourceAddr->sa_data + 2, sourceAddrStr, 16);
-
-        printf("sip:%s", DebugPrintHex(sourceAddr->sa_data + 2, 16));
-
-        log_debug("Received: %zd bytes from %s.", resultSize, sourceAddrStr);
+        log_debug("Received packet hex:\n %s", DebugPrintHex(PING_receivePacket, resultSize));
 
         PING_IcmpPacket *packet = &(PING_receivePacket->icmpPacket);
 
@@ -187,10 +187,12 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
 
         if (packet->unHeader.header.un.echo.id != icmpId
             || packet->unHeader.header.un.echo.sequence != icmpSeq) {
-            log_debug("Packet echo id(%d) or seq(%d) not match, drop.",
+            packetRetryTimes++;
+            log_debug("Packet echo id(%d) or seq(%d) not match, drop, retry times: %d.",
                       packet->unHeader.header.un.echo.id,
-                      packet->unHeader.header.un.echo.sequence);
-            break;
+                      packet->unHeader.header.un.echo.sequence,
+                      packetRetryTimes);
+            continue;
         }
 
         // has received match packet.
@@ -203,7 +205,7 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
         callback(icmpSeq, resultSize);
         return true;
     };
-    // retry out, finally failed.
+    // socketRetryTimes out, finally failed.
     return false;
 }
 
