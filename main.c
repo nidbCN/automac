@@ -12,8 +12,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <strings.h>
+#include <string.h>
 
 #define HELP_INFO "Try 'automac -h' for more information."
+
+uint8_t DEBUG_LEVEL = 0;
 
 void sendLoopInvoke(unsigned int seq, unsigned int dataSize) {
     log_info("ping success, seq=%d, receive %d bytes.", seq, dataSize);
@@ -43,22 +47,36 @@ int main(int argc, char *argv[]) {
 
     // parse arguments
     int opt;
-    while ((opt = getopt(argc, argv, "hvn:a:c:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hvd:n:a:c:")) != EOF) {
         switch (opt) {
             case 'h':
                 // h for help
                 fprintf(stdout, "Usage: automac -a <IP> -n <IF> [options...]\n"
+                                "  -h               Get help for commands\n"
+                                "  -v               Show version number and quit\n"
+                                "  -d <level>       Show debug message, options: E/W/I/D/T\n"
                                 "  -a <address>     IP address to test internet status\n"
                                 "  -n <if name>     Interface name to change MAC address\n"
-                                "  -c <command>     Execute a command after changed success\n"
-                                "  -h               Get help for commands\n"
-                                "  -v               Show version number and quit");
+                                "  -c <command>     Execute a command after changed success");
                 exit(EXIT_SUCCESS);
             case 'v':
                 // v for version
                 log_info("automac v1.2.1-2022.12.08");
                 exit(EXIT_SUCCESS);
+            case 'd':
+                DEBUG_LEVEL = 1;
+                uint8_t *table = new_array(uint8_t, 8);
+                memset(table, LOG_INFO, 8);
 
+                table[1] = LOG_ERROR;
+                table[7] = LOG_WARN;
+                table[2] = LOG_INFO;
+                table[0] = LOG_DEBUG;
+                table[6] = LOG_TRACE;
+
+                int option = (optarg[0] - 64) / 3 - 1;
+
+                DEBUG_LEVEL = option >= 0 && option < 8 ? table[option] : LOG_INFO;
             case 'n':
                 // n for network device
                 ifName = optarg;
@@ -72,6 +90,7 @@ int main(int argc, char *argv[]) {
                 cflag = true;
                 execCommand = optarg;
                 break;
+
             case '?':
                 // ? for unmatched argument
                 fprintf(stdout, HELP_INFO);
