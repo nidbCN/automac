@@ -133,8 +133,6 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
     PING_sendPacket->unHeader.header = header;
     PING_sendPacket->unHeader.header.checksum = PING_checkSum(PING_sendPacket, sizeof(PING_IcmpPacket));
 
-//    printf("%s", DebugPrintBin(PING_sendPacket, sizeof(PING_IcmpPacket)));
-
     //send packet
     if (sendto(PING_socketHandler, PING_sendPacket, sizeof(PING_IcmpPacket), 0x00,
                (struct sockaddr *) socketAddress,
@@ -177,7 +175,7 @@ bool PING_send(struct sockaddr_in *socketAddress, unsigned int icmpSeq,
             log_debug("Received: %zd bytes from %s.", resultSize, sourceAddrStr);
         }
 
-        log_debug("Received packet hex:\n %s", DebugPrintHex(PING_receivePacket, resultSize));
+        log_trace("Received packet hex:\n %s", DebugPrintHex(PING_receivePacket, resultSize));
 
         PING_IcmpPacket *packet = &(PING_receivePacket->icmpPacket);
 
