@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
                 int option = (optarg[0] - 64) / 3 - 1;
 
                 DEBUG_LEVEL = option >= 0 && option < 8 ? table[option] : LOG_INFO;
+                log_set_level(DEBUG_LEVEL);
             case 'n':
                 // n for network device
                 ifName = optarg;
