@@ -17,13 +17,16 @@ const char *DebugPrintHex(void *data, size_t size) {
         return "Data too large.\n";
     }
 
-    char *hexStr = new_array(char, size * 3);
-    bzero(hexStr, size * 3);
+    char *hexStr = new_array(char, size * 3 + 1);
+    bzero(hexStr, size * 3 + 1);
 
     for (int i = 0; i < size; ++i) {
         char *tempStr = new_array(char, 3);
-        sprintf(tempStr, "%02X ", *(uint8_t *) (data + i));
-        strcat(hexStr, tempStr);
+        sprintf(tempStr, "%02X", *(uint8_t *) (data + i));
+
+        hexStr[i * 3] = tempStr[0];
+        hexStr[i * 3 + 1] = tempStr[1];
+        hexStr[i * 3 + 2] = ' ';
     }
 
     return hexStr;
